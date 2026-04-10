@@ -1,4 +1,4 @@
-import { databases, DATABASE_ID, WORDS_COLLECTION_ID, Query } from './appwrite';
+import { databases, DATABASE_ID, WORDS_COLLECTION_ID, Query } from './services/appwrite';
 
 interface Player {
   socketId: string;

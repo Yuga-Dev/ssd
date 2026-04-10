@@ -41,3 +41,13 @@ Success criteria:
 1. Crewmates get real word; Imposter gets alternate word
 2. "Tap to reveal" works correctly on client devices
 3. Countdown completes and exposes Imposter and both words natively
+
+### Phase 5: Openquestons
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 4
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 5 to break down)

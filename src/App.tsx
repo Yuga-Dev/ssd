@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from './store/gameStore';
-import socket from './lib/socket';
+import { socket } from './lib/socket';
 import './App.css';
 
 // Helper component for the Host Countdown Timer

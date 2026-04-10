@@ -16,7 +16,7 @@ const io = new Server(server, {
   }
 });
 
-import { createRoom, joinRoom, startGame, leaveRoom, getRoom } from './src/gameEngine';
+import { createRoom, joinRoom, startGame, leaveRoom, getRoom, endGame } from './src/gameEngine';
 
 io.on('connection', (socket: Socket) => {
   console.log('A user connected:', socket.id);
@@ -64,7 +64,6 @@ io.on('connection', (socket: Socket) => {
     });
   });
 
-  import { endGame } from './src/gameEngine';
   socket.on('end_game', ({ code }) => {
      const roomResult = endGame(code, socket.id);
      if ('error' in roomResult) {
