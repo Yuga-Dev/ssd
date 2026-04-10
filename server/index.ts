@@ -1,7 +1,7 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
+import express from 'express';
+import http from 'http';
+import { Server, Socket } from 'socket.io';
+import cors from 'cors';
 
 const app = express();
 app.use(cors());
@@ -15,7 +15,7 @@ const io = new Server(server, {
   }
 });
 
-io.on('connection', (socket) => {
+io.on('connection', (socket: Socket) => {
   console.log('A user connected:', socket.id);
 
   socket.on('disconnect', () => {
