@@ -1,4 +1,4 @@
-import { databases, DATABASE_ID, WORDS_COLLECTION_ID, Query } from './services/appwrite';
+import { WordPair } from './models/WordPair';
 import { Session } from './models/Session';
 
 interface Player {
@@ -7,7 +7,7 @@ interface Player {
   playerId?: string;
 }
 
-export interface WordPair {
+export interface GameWordPair {
   realWord: string;
   imposterWord: string;
 }
@@ -18,7 +18,7 @@ export interface GameRoom {
   status: 'lobby' | 'active' | 'reveal';
   players: Player[];
   roles: Record<string, 'Imposter' | 'Crewmate'>;
-  wordPair?: WordPair;
+  wordPair?: GameWordPair;
   endTime?: number;
 }
 
@@ -76,28 +76,22 @@ export async function startGame(code: string, hostId: string, durationMinutes: n
   if (room.players.length > 12) return { error: 'Maximum 12 players allowed' };
 
   try {
-    const docsInfo = await databases.listDocuments(
-      DATABASE_ID,
-      WORDS_COLLECTION_ID,
-      [
-        Query.equal('used', false),
-        Query.limit(1)
-      ]
+    const doc = await WordPair.findOneAndUpdate(
+      { used: false },
+      { used: true },
+      { new: true }
     );
 
-    if (docsInfo.documents.length === 0) {
+    if (!doc) {
       return { error: 'No words available in the database. Please try again soon.' };
     }
-
-    const doc = docsInfo.documents[0];
-    await databases.updateDocument(DATABASE_ID, WORDS_COLLECTION_ID, doc.$id, { used: true });
 
     room.wordPair = {
       realWord: doc.realWord,
       imposterWord: doc.imposterWord
     };
   } catch (error) {
-    console.error('Failed to fetch words from Appwrite:', error);
+    console.error('Failed to fetch words from MongoDB:', error);
     return { error: 'Database error fetching words' };
   }
 

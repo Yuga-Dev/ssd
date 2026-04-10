@@ -8,6 +8,9 @@ const genAI = new GoogleGenerativeAI(apiKey);
 export interface WordPair {
   realWord: string;
   imposterWord: string;
+  category: string;
+  difficulty: string;
+  relationship: string;
 }
 
 export async function generateWordPairs(count: number): Promise<WordPair[]> {
@@ -18,14 +21,19 @@ export async function generateWordPairs(count: number): Promise<WordPair[]> {
 
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   const prompt = `Generate exactly ${count} word pairs for a social deduction game.
-Each pair must have a 'realWord' intended for crewmates, and an 'imposterWord' that is slightly related but clearly different (so the imposter can eventually be caught).
-The words should be common nouns or concepts.
+Each pair must have a 'realWord' intended for crewmates, and an 'imposterWord' that is slightly related but clearly different.
+Also provide the 'category' (e.g. Food, Animals, Tech), 'difficulty' (Easy, Medium, Hard), and 'relationship' (a short description of how the two words relate).
 
 Respond ONLY with a JSON array of objects. Do not include markdown blocks or any other explanation, just the raw JSON.
 Example format:
 [
-  { "realWord": "Apple", "imposterWord": "Pear" },
-  { "realWord": "Ocean", "imposterWord": "River" }
+  { 
+    "realWord": "Coffee", 
+    "imposterWord": "Tea",
+    "category": "Food",
+    "difficulty": "Easy",
+    "relationship": "Hot beverages"
+  }
 ]
 `;
 

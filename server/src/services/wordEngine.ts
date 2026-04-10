@@ -1,24 +1,11 @@
-import { databases, DATABASE_ID, WORDS_COLLECTION_ID, Query, ID } from './appwrite';
+import { WordPair } from '../models/WordPair';
+import { AiWordBatch } from '../models/AiWordBatch';
 import { generateWordPairs } from './gemini';
 
 export async function checkAndRefillWords() {
-  if (!DATABASE_ID || !WORDS_COLLECTION_ID) {
-    console.warn("[Word Engine] Missing DATABASE_ID or WORDS_COLLECTION_ID.");
-    return;
-  }
 
   try {
-    // We only care about words that are NOT used yet
-    const result = await databases.listDocuments(
-      DATABASE_ID,
-      WORDS_COLLECTION_ID,
-      [
-        Query.equal('used', false),
-        Query.limit(1) // we just need the count, but we'll fetch at most 1
-      ]
-    );
-
-    const unusedCount = result.total;
+    const unusedCount = await WordPair.countDocuments({ used: false });
     console.log(`[Word Engine] Current unused word pairs: ${unusedCount}`);
 
     if (unusedCount < 20) {
@@ -30,25 +17,34 @@ export async function checkAndRefillWords() {
          return;
       }
 
-      console.log(`[Word Engine] Successfully generated ${newPairs.length} new pairs. Inserting into Appwrite...`);
+      console.log(`[Word Engine] Successfully generated ${newPairs.length} new pairs. Inserting into MongoDB...`);
       
       let insertedCount = 0;
+      const insertedIds = [];
       for (const pair of newPairs) {
         try {
-          await databases.createDocument(
-            DATABASE_ID,
-            WORDS_COLLECTION_ID,
-            ID.unique(),
-            {
-              realWord: pair.realWord,
-              imposterWord: pair.imposterWord,
-              used: false
-            }
-          );
+          const wp = new WordPair({
+            realWord: pair.realWord,
+            imposterWord: pair.imposterWord,
+            category: pair.category,
+            difficulty: pair.difficulty,
+            relationship: pair.relationship,
+            used: false
+          });
+          await wp.save();
+          insertedIds.push(wp._id);
           insertedCount++;
         } catch (err) {
           console.error(`[Word Engine] Failed to insert word pair:`, err);
         }
+      }
+      
+      if (insertedCount > 0) {
+          const batch = new AiWordBatch({
+              batchSize: insertedCount,
+              wordIds: insertedIds
+          });
+          await batch.save();
       }
 
       console.log(`[Word Engine] Restock complete. ${insertedCount} words inserted successfully.`);

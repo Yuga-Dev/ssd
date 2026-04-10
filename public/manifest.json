@@ -1,0 +1,17 @@
+{
+  "name": "Imposter Word Game",
+  "short_name": "Imposter",
+  "description": "A multiplayer word deduction game",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
