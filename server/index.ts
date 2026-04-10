@@ -16,11 +16,59 @@ const io = new Server(server, {
   }
 });
 
+import { createRoom, joinRoom, startGame, leaveRoom, getRoom } from './src/gameEngine';
+
 io.on('connection', (socket: Socket) => {
   console.log('A user connected:', socket.id);
 
+  socket.on('create_room', () => {
+    const room = createRoom(socket.id);
+    socket.join(room.code);
+    socket.emit('room_created', { code: room.code });
+  });
+
+  socket.on('join_room', ({ code, name }) => {
+    const roomResult = joinRoom(code, socket.id, name);
+    if ('error' in roomResult) {
+      socket.emit('error', { message: roomResult.error });
+      return;
+    }
+    
+    socket.join(roomResult.code);
+    const safeRoom = { ...roomResult, roles: undefined };
+    io.to(roomResult.code).emit('room_state_update', safeRoom);
+  });
+
+  socket.on('start_game', ({ code }) => {
+    const roomResult = startGame(code, socket.id);
+    if ('error' in roomResult) {
+      socket.emit('error', { message: roomResult.error });
+      return;
+    }
+
+    // Broadcast that game is starting (do NOT send role map)
+    const safeRoom = { ...roomResult, roles: undefined };
+    io.to(roomResult.code).emit('game_started', safeRoom);
+    io.to(roomResult.code).emit('room_state_update', safeRoom);
+
+    // Notify each player securely of their individual role via targeted dispatch
+    roomResult.players.forEach(p => {
+      io.to(p.socketId).emit('role_assigned', { role: roomResult.roles[p.socketId] });
+    });
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+    const affectedCodes = leaveRoom(socket.id);
+    affectedCodes.forEach(code => {
+      const room = getRoom(code);
+      if (room) {
+        const safeRoom = { ...room, roles: undefined };
+        io.to(code).emit('room_state_update', safeRoom);
+      } else {
+        io.to(code).emit('room_closed');
+      }
+    });
   });
 });
 
