@@ -38,6 +38,7 @@ function App() {
   
   // Obfuscation state for players
   const [isWordRevealed, setIsWordRevealed] = useState(false);
+  const [timerDuration, setTimerDuration] = useState(5);
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -102,7 +103,7 @@ function App() {
     if (!joinCode || !joinName) return setErrorMsg('Please enter both a code and your name.');
     socket.emit('join_room', { code: joinCode, name: joinName });
   };
-  const handleStartGame = () => store.roomCode && socket.emit('start_game', { code: store.roomCode });
+  const handleStartGame = () => store.roomCode && socket.emit('start_game', { code: store.roomCode, duration: timerDuration });
   const handleEndGame = () => store.roomCode && socket.emit('end_game', { code: store.roomCode });
 
   if (!store.isConnected) {
@@ -231,13 +232,27 @@ function App() {
           </div>
 
           {store.isHost ? (
-            <button
-              onClick={handleStartGame}
-              disabled={store.players.length < 3}
-              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 rounded-lg font-bold transition-all shadow-lg text-lg uppercase tracking-wide"
-            >
-              Start Game ({store.players.length}/12)
-            </button>
+            <div className="space-y-4 shadow-lg border border-gray-700 bg-gray-900/40 p-4 rounded-xl">
+               <div>
+                  <label className="text-xs uppercase font-bold text-gray-400 mb-2 block tracking-wider">Game Duration</label>
+                  <select 
+                     className="w-full bg-gray-800 border-gray-600 rounded text-white p-3 outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner cursor-pointer"
+                     value={timerDuration}
+                     onChange={(e) => setTimerDuration(Number(e.target.value))}
+                  >
+                     <option value={3}>3 Minutes (Fast)</option>
+                     <option value={5}>5 Minutes (Standard)</option>
+                     <option value={10}>10 Minutes (Long)</option>
+                  </select>
+               </div>
+               <button
+                 onClick={handleStartGame}
+                 disabled={store.players.length < 3}
+                 className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 rounded-lg font-bold transition-all shadow-lg text-lg uppercase tracking-wide"
+               >
+                 Start Game ({store.players.length}/12)
+               </button>
+            </div>
           ) : (
              <div className="p-4 bg-indigo-500/10 text-indigo-300 rounded text-center border border-indigo-500/20 text-sm font-medium">
                 Waiting for host to start the game...

@@ -39,8 +39,8 @@ io.on('connection', (socket: Socket) => {
     io.to(roomResult.code).emit('room_state_update', safeRoom);
   });
 
-  socket.on('start_game', async ({ code }) => {
-    const roomResult = await startGame(code, socket.id);
+  socket.on('start_game', async ({ code, duration }) => {
+    const roomResult = await startGame(code, socket.id, duration);
     if ('error' in roomResult) {
       socket.emit('error', { message: roomResult.error });
       return;

@@ -72,7 +72,7 @@ export function joinRoom(code: string, socketId: string, name: string): GameRoom
   return room;
 }
 
-export async function startGame(code: string, hostId: string): Promise<GameRoom | { error: string }> {
+export async function startGame(code: string, hostId: string, durationMinutes: number = 5): Promise<GameRoom | { error: string }> {
   const room = getRoom(code);
   if (!room) return { error: 'Room not found' };
   if (room.hostId !== hostId) return { error: 'Only the host can start the game' };
@@ -80,7 +80,6 @@ export async function startGame(code: string, hostId: string): Promise<GameRoom 
   if (room.players.length > 12) return { error: 'Maximum 12 players allowed' };
 
   try {
-    // Fetch an unused word
     const docsInfo = await databases.listDocuments(
       DATABASE_ID,
       WORDS_COLLECTION_ID,
@@ -95,8 +94,6 @@ export async function startGame(code: string, hostId: string): Promise<GameRoom 
     }
 
     const doc = docsInfo.documents[0];
-    
-    // Set to used asynchronously 
     await databases.updateDocument(DATABASE_ID, WORDS_COLLECTION_ID, doc.$id, { used: true });
 
     room.wordPair = {
@@ -116,8 +113,7 @@ export async function startGame(code: string, hostId: string): Promise<GameRoom 
   });
 
   room.status = 'active';
-  // Hardcode 5 minutes
-  room.endTime = Date.now() + 5 * 60 * 1000;
+  room.endTime = Date.now() + durationMinutes * 60 * 1000;
   return room;
 }
 
