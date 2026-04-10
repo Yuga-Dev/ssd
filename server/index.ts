@@ -3,6 +3,8 @@ import http from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import { checkAndRefillWords } from './src/services/wordEngine';
+import { connectDatabase } from './src/database';
+import { Player } from './src/models/Player';
 
 const app = express();
 app.use(cors());
@@ -21,13 +23,51 @@ import { createRoom, joinRoom, startGame, leaveRoom, getRoom, endGame } from './
 io.on('connection', (socket: Socket) => {
   console.log('A user connected:', socket.id);
 
-  socket.on('create_room', () => {
-    const room = createRoom(socket.id);
-    socket.join(room.code);
-    socket.emit('room_created', { code: room.code });
+  socket.on('register_device', async ({ displayName, deviceId }) => {
+    try {
+      let player = await Player.findOne({ deviceId });
+      if (!player) {
+         player = new Player({ displayName, deviceId, isOnline: true });
+      } else {
+         player.displayName = displayName;
+         player.isOnline = true;
+      }
+      await player.save();
+      
+      (socket as any).deviceId = deviceId;
+      (socket as any).playerId = player._id.toString();
+      (socket as any).displayName = displayName;
+      
+      socket.emit('device_registered', { playerId: player._id.toString(), displayName });
+      
+      // broadcast update for hosts listening to active players
+      const players = await Player.find({ isOnline: true });
+      io.emit('active_players_list', players);
+    } catch (err) {
+      console.error(err);
+      socket.emit('error', { message: 'Failed to register device' });
+    }
   });
 
-  socket.on('join_room', ({ code, name }) => {
+  socket.on('get_active_players', async () => {
+     try {
+       const players = await Player.find({ isOnline: true });
+       socket.emit('active_players_list', players);
+     } catch (err) {}
+  });
+
+  socket.on('create_room', async ({ playerIds }: { playerIds: string[] }) => {
+    const room = await createRoom((socket as any).playerId || socket.id);
+    socket.join(room.code);
+    socket.emit('room_created', { code: room.code });
+    
+    // Broadcast to targeted players
+    if (playerIds && playerIds.length > 0) {
+      io.emit('route_players_to_room', { code: room.code, targetPlayerIds: playerIds });
+    }
+  });
+
+  socket.on('join_room', ({ code, name, playerId }) => {
     const roomResult = joinRoom(code, socket.id, name);
     if ('error' in roomResult) {
       socket.emit('error', { message: roomResult.error });
@@ -82,7 +122,7 @@ io.on('connection', (socket: Socket) => {
      io.to(code).emit('room_state_update', safeRoom);
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
     const affectedCodes = leaveRoom(socket.id);
     affectedCodes.forEach(code => {
@@ -94,12 +134,22 @@ io.on('connection', (socket: Socket) => {
         io.to(code).emit('room_closed');
       }
     });
+    
+    // Update MongoDB
+    const deviceId = (socket as any).deviceId;
+    if (deviceId) {
+       await Player.findOneAndUpdate({ deviceId }, { isOnline: false });
+       const players = await Player.find({ isOnline: true });
+       io.emit('active_players_list', players);
+    }
   });
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`Socket.IO Server listening on port ${PORT}`);
+  
+  await connectDatabase();
   
   // Check and refill words immediately on startup
   checkAndRefillWords();

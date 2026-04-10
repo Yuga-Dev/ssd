@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export type Player = {
   socketId: string;
   name: string;
+  playerId?: string;
 };
 
 interface RevealState {
@@ -15,8 +16,13 @@ interface GameState {
   isConnected: boolean;
   isHost: boolean;
   playerName: string;
+  playerId: string | null;
+  deviceId: string | null;
+  
   roomCode: string | null;
   players: Player[];
+  activePlayers: { _id: string; displayName: string; isOnline: boolean }[];
+  
   status: 'idle' | 'lobby' | 'active' | 'reveal';
   isImposter: boolean;
   assignedWord: string | null;
@@ -25,7 +31,8 @@ interface GameState {
   
   setConnected: (status: boolean) => void;
   setHost: (isHost: boolean) => void;
-  setPlayerName: (name: string) => void;
+  setIdentity: (playerId: string, deviceId: string, name: string) => void;
+  setActivePlayers: (players: any[]) => void;
   setRoom: (code: string | null, players: Player[], status: 'idle' | 'lobby' | 'active' | 'reveal') => void;
   setRole: (isImposter: boolean, word: string | null, endTime: number | null) => void;
   setReveal: (revealState: RevealState) => void;
@@ -36,8 +43,11 @@ export const useGameStore = create<GameState>((set) => ({
   isConnected: false,
   isHost: false,
   playerName: '',
+  playerId: null,
+  deviceId: null,
   roomCode: null,
   players: [],
+  activePlayers: [],
   status: 'idle',
   isImposter: false,
   assignedWord: null,
@@ -46,7 +56,8 @@ export const useGameStore = create<GameState>((set) => ({
 
   setConnected: (status) => set({ isConnected: status }),
   setHost: (isHost) => set({ isHost }),
-  setPlayerName: (name) => set({ playerName: name }),
+  setIdentity: (playerId, deviceId, name) => set({ playerId, deviceId, playerName: name }),
+  setActivePlayers: (players) => set({ activePlayers: players }),
   setRoom: (roomCode, players, status) => set({ roomCode, players, status }),
   setRole: (isImposter, assignedWord, endTime) => set({ isImposter, assignedWord, endTime }),
   setReveal: (revealState) => set({ revealState, status: 'reveal' }),

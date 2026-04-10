@@ -1,8 +1,10 @@
 import { databases, DATABASE_ID, WORDS_COLLECTION_ID, Query } from './services/appwrite';
+import { Session } from './models/Session';
 
 interface Player {
   socketId: string;
   name: string;
+  playerId?: string;
 }
 
 export interface WordPair {
@@ -22,20 +24,14 @@ export interface GameRoom {
 
 const activeRooms: Map<string, GameRoom> = new Map();
 
-function generateCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let result = '';
-  for (let i = 0; i < 4; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-export function createRoom(hostId: string): GameRoom {
-  let code = generateCode();
-  while (activeRooms.has(code)) {
-    code = generateCode();
-  }
+export async function createRoom(hostId: string): Promise<GameRoom> {
+  const newSessionDb = new Session({
+     hostId,
+     players: [],
+     status: 'lobby'
+  });
+  await newSessionDb.save();
+  const code = newSessionDb._id.toString();
 
   const newRoom: GameRoom = {
     code,
@@ -53,7 +49,7 @@ export function getRoom(code: string): GameRoom | undefined {
   return activeRooms.get(code.toUpperCase());
 }
 
-export function joinRoom(code: string, socketId: string, name: string): GameRoom | { error: string } {
+export function joinRoom(code: string, socketId: string, name: string, playerId?: string): GameRoom | { error: string } {
   const room = getRoom(code);
   if (!room) {
     return { error: 'Room not found' };
@@ -64,11 +60,11 @@ export function joinRoom(code: string, socketId: string, name: string): GameRoom
   if (room.players.length >= 12) {
     return { error: 'Room is full' };
   }
-  if (room.players.find(p => p.socketId === socketId)) {
+  if (room.players.find(p => p.socketId === socketId || (playerId && p.playerId === playerId))) {
     return { error: 'Already joined' };
   }
 
-  room.players.push({ socketId, name });
+  room.players.push({ socketId, name, playerId });
   return room;
 }
 
@@ -114,6 +110,13 @@ export async function startGame(code: string, hostId: string, durationMinutes: n
 
   room.status = 'active';
   room.endTime = Date.now() + durationMinutes * 60 * 1000;
+  
+  // Async update MongoDB
+  Session.findByIdAndUpdate(code, {
+    status: 'active',
+    players: room.players.map(p => p.playerId).filter(Boolean) as string[],
+  }).catch(err => console.error('[gameEngine] Failed to sync Session Start:', err));
+  
   return room;
 }
 
@@ -123,6 +126,11 @@ export function endGame(code: string, hostId: string): GameRoom | { error: strin
   if (room.hostId !== hostId) return { error: 'Unauthorized' };
 
   room.status = 'reveal';
+  
+  Session.findByIdAndUpdate(code, {
+     status: 'reveal'
+  }).catch(err => console.error('[gameEngine] Failed to sync Session End:', err));
+  
   return room;
 }
 
