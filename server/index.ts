@@ -39,22 +39,48 @@ io.on('connection', (socket: Socket) => {
     io.to(roomResult.code).emit('room_state_update', safeRoom);
   });
 
-  socket.on('start_game', ({ code }) => {
-    const roomResult = startGame(code, socket.id);
+  socket.on('start_game', async ({ code }) => {
+    const roomResult = await startGame(code, socket.id);
     if ('error' in roomResult) {
       socket.emit('error', { message: roomResult.error });
       return;
     }
 
-    // Broadcast that game is starting (do NOT send role map)
-    const safeRoom = { ...roomResult, roles: undefined };
+    // Broadcast that game is starting (do NOT send role map or word Pair)
+    const safeRoom = { ...roomResult, roles: undefined, wordPair: undefined };
     io.to(roomResult.code).emit('game_started', safeRoom);
     io.to(roomResult.code).emit('room_state_update', safeRoom);
 
-    // Notify each player securely of their individual role via targeted dispatch
+    // Notify each player securely of their individual role and intended word
     roomResult.players.forEach(p => {
-      io.to(p.socketId).emit('role_assigned', { role: roomResult.roles[p.socketId] });
+      const isImposter = roomResult.roles[p.socketId] === 'Imposter';
+      const assignedWord = isImposter ? roomResult.wordPair?.imposterWord : roomResult.wordPair?.realWord;
+      
+      io.to(p.socketId).emit('role_assigned', { 
+        role: roomResult.roles[p.socketId],
+        word: assignedWord,
+        endTime: roomResult.endTime
+      });
     });
+  });
+
+  import { endGame } from './src/gameEngine';
+  socket.on('end_game', ({ code }) => {
+     const roomResult = endGame(code, socket.id);
+     if ('error' in roomResult) {
+        socket.emit('error', { message: roomResult.error });
+        return;
+     }
+
+     // Emit public revelation
+     io.to(code).emit('game_ended', {
+        imposterId: Object.keys(roomResult.roles).find(key => roomResult.roles[key] === 'Imposter'),
+        realWord: roomResult.wordPair?.realWord,
+        imposterWord: roomResult.wordPair?.imposterWord,
+     });
+     
+     const safeRoom = { ...roomResult, roles: undefined, wordPair: undefined };
+     io.to(code).emit('room_state_update', safeRoom);
   });
 
   socket.on('disconnect', () => {

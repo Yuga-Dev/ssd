@@ -1,14 +1,23 @@
+import { databases, DATABASE_ID, WORDS_COLLECTION_ID, Query } from './appwrite';
+
 interface Player {
   socketId: string;
   name: string;
 }
 
+export interface WordPair {
+  realWord: string;
+  imposterWord: string;
+}
+
 export interface GameRoom {
   code: string;
   hostId: string;
-  status: 'lobby' | 'active';
+  status: 'lobby' | 'active' | 'reveal';
   players: Player[];
   roles: Record<string, 'Imposter' | 'Crewmate'>;
+  wordPair?: WordPair;
+  endTime?: number;
 }
 
 const activeRooms: Map<string, GameRoom> = new Map();
@@ -63,12 +72,41 @@ export function joinRoom(code: string, socketId: string, name: string): GameRoom
   return room;
 }
 
-export function startGame(code: string, hostId: string): GameRoom | { error: string } {
+export async function startGame(code: string, hostId: string): Promise<GameRoom | { error: string }> {
   const room = getRoom(code);
   if (!room) return { error: 'Room not found' };
   if (room.hostId !== hostId) return { error: 'Only the host can start the game' };
   if (room.players.length < 3) return { error: 'Minimum 3 players required' };
   if (room.players.length > 12) return { error: 'Maximum 12 players allowed' };
+
+  try {
+    // Fetch an unused word
+    const docsInfo = await databases.listDocuments(
+      DATABASE_ID,
+      WORDS_COLLECTION_ID,
+      [
+        Query.equal('used', false),
+        Query.limit(1)
+      ]
+    );
+
+    if (docsInfo.documents.length === 0) {
+      return { error: 'No words available in the database. Please try again soon.' };
+    }
+
+    const doc = docsInfo.documents[0];
+    
+    // Set to used asynchronously 
+    await databases.updateDocument(DATABASE_ID, WORDS_COLLECTION_ID, doc.$id, { used: true });
+
+    room.wordPair = {
+      realWord: doc.realWord,
+      imposterWord: doc.imposterWord
+    };
+  } catch (error) {
+    console.error('Failed to fetch words from Appwrite:', error);
+    return { error: 'Database error fetching words' };
+  }
 
   const imposterIndex = Math.floor(Math.random() * room.players.length);
   const imposterId = room.players[imposterIndex].socketId;
@@ -78,6 +116,17 @@ export function startGame(code: string, hostId: string): GameRoom | { error: str
   });
 
   room.status = 'active';
+  // Hardcode 5 minutes
+  room.endTime = Date.now() + 5 * 60 * 1000;
+  return room;
+}
+
+export function endGame(code: string, hostId: string): GameRoom | { error: string } {
+  const room = getRoom(code);
+  if (!room) return { error: 'Room not found' };
+  if (room.hostId !== hostId) return { error: 'Unauthorized' };
+
+  room.status = 'reveal';
   return room;
 }
 
