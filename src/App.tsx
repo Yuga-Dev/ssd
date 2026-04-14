@@ -205,18 +205,21 @@ function App() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4 select-none">
         
-        {store.isHost ? (
-          <div className="bg-gray-800 p-8 rounded-xl shadow-2xl text-center border overflow-hidden border-rose-500/30 max-w-sm w-full">
-            <h2 className="text-2xl font-bold mb-6 text-gray-200">Session Timer</h2>
+        {store.isHost && (
+          <div className="bg-gray-800 p-6 rounded-xl shadow-lg text-center border border-rose-500/30 max-w-sm w-full mb-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-rose-500"></div>
+            <h2 className="text-sm font-bold mb-4 text-rose-400 tracking-widest uppercase">Host Controls</h2>
             {store.endTime && <CountdownTimer endTime={store.endTime} />}
             <button
                onClick={handleEndGame}
-               className="mt-4 w-full py-3 bg-rose-600 hover:bg-rose-500 rounded font-bold transition-all shadow-lg text-white tracking-wide"
+               className="mt-2 w-full py-3 bg-rose-600 hover:bg-rose-500 rounded font-bold transition-all shadow-lg text-white tracking-wide"
             >
                Force End Game
             </button>
           </div>
-        ) : (
+        )}
+
+        {store.assignedWord && (
           <div className="bg-gray-800 rounded-xl shadow-2xl text-center border border-gray-700 max-w-sm w-full flex flex-col overflow-hidden">
             <div className="p-6 bg-gray-900/50 border-b border-gray-700">
                <h2 className="text-lg text-gray-400 font-medium">Your Identity is</h2>
