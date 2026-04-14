@@ -195,14 +195,12 @@ function App() {
             </div>
           </div>
           
-          {store.isHost && (
-             <button
-                onClick={() => store.resetGame()}
-                className="mt-8 w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold transition-all text-white"
-             >
-                Return to Home
-             </button>
-          )}
+          <button
+             onClick={() => store.resetGame()}
+             className="mt-8 w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold transition-all shadow text-white tracking-wider uppercase text-sm"
+          >
+             Return to Home
+          </button>
         </div>
       </div>
     )
