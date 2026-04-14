@@ -29,7 +29,7 @@ export async function generateWordPairs(count: number): Promise<WordPair[]> {
     return mockedPairs;
   }
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
   const prompt = `Generate exactly ${count} word pairs for a social deduction game.
 Each pair must have a 'realWord' intended for crewmates, and an 'imposterWord' that is slightly related but clearly different.
 Also provide the 'category' (e.g. Food, Animals, Tech), 'difficulty' (Easy, Medium, Hard), and 'relationship' (a short description of how the two words relate).
