@@ -41,6 +41,7 @@ function CountdownTimer({ endTime }: { endTime: number }) {
 function App() {
   const store = useGameStore();
   const [joinName, setJoinName] = useState('');
+  const [roleSelection, setRoleSelection] = useState<'host' | 'player' | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   
   const [isWordRevealed, setIsWordRevealed] = useState(false);
@@ -349,7 +350,58 @@ function App() {
       );
   }
 
-  // PLAYER DASHBOARD (Identified, No Active Room)
+  // ROLE SELECTION LOGIC
+  if (!roleSelection) {
+     return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4 leading-normal font-sans">
+           <div className="w-full max-w-sm">
+             <h2 className="text-2xl font-bold mb-8 text-center text-gray-200">Choose your role</h2>
+             <div className="space-y-4 shadow-2xl">
+                <button
+                  onClick={() => setRoleSelection('host')}
+                  className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition-all text-white uppercase tracking-wider text-sm"
+                >
+                  Act as Host & Player
+                </button>
+                <div className="relative flex py-2 items-center">
+                   <div className="flex-grow border-t border-gray-700"></div>
+                   <span className="flex-shrink-0 mx-4 text-gray-500 text-xs font-bold uppercase">OR</span>
+                   <div className="flex-grow border-t border-gray-700"></div>
+                </div>
+                <button
+                  onClick={() => setRoleSelection('player')}
+                  className="w-full py-4 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl font-bold shadow transition-all text-gray-300 uppercase tracking-wider text-sm"
+                >
+                  Only Player
+                </button>
+             </div>
+           </div>
+        </div>
+     );
+  }
+
+  // ONLY PLAYER LOGIC
+  if (roleSelection === 'player') {
+     return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4 leading-normal font-sans">
+           <div className="w-full max-w-sm text-center bg-gray-800 p-8 rounded-xl border border-gray-700 shadow-2xl">
+             <div className="flex justify-center mb-8">
+                <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+             </div>
+             <h2 className="text-xl font-bold mb-2 text-gray-200">Waiting for a Host</h2>
+             <p className="text-gray-400 text-sm">Keep this screen open until someone invites you to their game.</p>
+             <button
+               onClick={() => setRoleSelection(null)}
+               className="mt-10 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-all border border-gray-600"
+             >
+               Go Back
+             </button>
+           </div>
+        </div>
+     );
+  }
+
+  // HOST DASHBOARD
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4 leading-normal font-sans">
       <div className="w-full max-w-sm mb-6 flex justify-between items-end border-b border-gray-700 pb-2">
@@ -358,7 +410,10 @@ function App() {
       </div>
 
       <div className="w-full max-w-sm">
-        <h2 className="text-lg font-bold mb-4 text-gray-200">Start a Match</h2>
+        <div className="flex justify-between items-center mb-4">
+           <h2 className="text-lg font-bold text-gray-200">Start a Match</h2>
+           <button onClick={() => setRoleSelection(null)} className="text-xs text-gray-500 hover:text-gray-300 underline">Change Role</button>
+        </div>
 
         <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-xl mb-6">
            <h3 className="text-sm uppercase tracking-wider font-bold text-gray-400 mb-3">Online Players</h3>
@@ -391,12 +446,10 @@ function App() {
              onClick={handleCreateRoom}
              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition-all text-white uppercase tracking-wider text-sm"
            >
-             Act as Host & Player
+             Start Match
            </button>
            {errorMsg && <p className="text-rose-400 text-sm mt-4 text-center font-medium bg-rose-500/10 p-2 rounded">{errorMsg}</p>}
         </div>
-        
-        <p className="text-xs text-center text-gray-500 font-medium">Wait here if you expect someone else to invite you to a game.</p>
       </div>
     </div>
   );
