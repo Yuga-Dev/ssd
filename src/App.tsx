@@ -82,15 +82,23 @@ function App() {
     });
 
     socket.on('route_players_to_room', ({ code, targetPlayerIds }) => {
+       const state = useGameStore.getState();
        // if we are explicitly invited to this room mapping, forcefully join it
-       if (store.playerId && targetPlayerIds.includes(store.playerId)) {
-          socket.emit('join_room', { code, name: store.playerName, playerId: store.playerId });
+       if (state.playerId && targetPlayerIds.includes(state.playerId)) {
+          socket.emit('join_room', { code, name: state.playerName, playerId: state.playerId });
        }
     });
 
     socket.on('room_created', (data: { code: string }) => {
-      store.setHost(true);
-      store.setRoom(data.code, [], 'lobby');
+      const state = useGameStore.getState();
+      state.setHost(true);
+      state.setRoom(data.code, [], 'lobby');
+      
+      // Auto-join the host as a player
+      if (state.playerId && state.playerName) {
+         socket.emit('join_room', { code: data.code, name: state.playerName, playerId: state.playerId });
+      }
+      
       setErrorMsg('');
     });
 
