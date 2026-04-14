@@ -68,7 +68,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   socket.on('join_room', ({ code, name, playerId }) => {
-    const roomResult = joinRoom(code, socket.id, name);
+    const roomResult = joinRoom(code, socket.id, name, playerId);
     if ('error' in roomResult) {
       socket.emit('error', { message: roomResult.error });
       return;
@@ -80,7 +80,8 @@ io.on('connection', (socket: Socket) => {
   });
 
   socket.on('start_game', async ({ code, duration }) => {
-    const roomResult = await startGame(code, socket.id, duration);
+    const hostId = (socket as any).playerId || socket.id;
+    const roomResult = await startGame(code, hostId, duration);
     if ('error' in roomResult) {
       socket.emit('error', { message: roomResult.error });
       return;
@@ -105,7 +106,8 @@ io.on('connection', (socket: Socket) => {
   });
 
   socket.on('end_game', ({ code }) => {
-     const roomResult = endGame(code, socket.id);
+     const hostId = (socket as any).playerId || socket.id;
+     const roomResult = endGame(code, hostId);
      if ('error' in roomResult) {
         socket.emit('error', { message: roomResult.error });
         return;

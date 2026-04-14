@@ -15,8 +15,18 @@ export interface WordPair {
 
 export async function generateWordPairs(count: number): Promise<WordPair[]> {
   if (!apiKey) {
-    console.error("GEMINI_API_KEY is missing. Word generation skipped.");
-    return [];
+    console.warn("GEMINI_API_KEY is missing. Using mocked word pairs for UAT.");
+    const mockedPairs: WordPair[] = [];
+    for (let i = 0; i < count; i++) {
+       mockedPairs.push({
+         realWord: `Mock-Real-${i}`,
+         imposterWord: `Mock-Imposter-${i}`,
+         category: 'UAT',
+         difficulty: 'Easy',
+         relationship: 'Testing variants'
+       });
+    }
+    return mockedPairs;
   }
 
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });

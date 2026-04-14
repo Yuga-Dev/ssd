@@ -46,7 +46,7 @@ export async function createRoom(hostId: string): Promise<GameRoom> {
 }
 
 export function getRoom(code: string): GameRoom | undefined {
-  return activeRooms.get(code.toUpperCase());
+  return activeRooms.get(code);
 }
 
 export function joinRoom(code: string, socketId: string, name: string, playerId?: string): GameRoom | { error: string } {
