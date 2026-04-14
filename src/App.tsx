@@ -389,9 +389,9 @@ function App() {
 
            <button
              onClick={handleCreateRoom}
-             className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-lg font-bold shadow-lg shadow-emerald-600/20 transition-all text-white"
+             className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition-all text-white uppercase tracking-wider text-sm"
            >
-             Invite & Play
+             Act as Host & Player
            </button>
            {errorMsg && <p className="text-rose-400 text-sm mt-4 text-center font-medium bg-rose-500/10 p-2 rounded">{errorMsg}</p>}
         </div>
